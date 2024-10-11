@@ -7,7 +7,7 @@ int
 
 
 
-
+ printf("Bir x gir");
 
 
 
