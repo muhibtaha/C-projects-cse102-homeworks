@@ -1,10 +1,9 @@
 #include <stdio.h>
 
-int N;
+int N=0;
 
 int 
     main(void){
-
 
 
 
