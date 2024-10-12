@@ -29,10 +29,10 @@ double absolute (double value) {     /*a function that show us absolute value to
 }
 
 double min_finder (double value1, double value2){
-   if (value1>value2){if (value2=0) return (value2+EPSILON);
+   if (value1>value2){if (value2==0) return (value2+EPSILON);
                         else return value2;}
 
-   if (value2>=value1){if (value1=0) return (value2+EPSILON);
+   if (value2>=value1){if (value1==0) return (value2+EPSILON);
                         else return value1;}
 }
 
@@ -125,7 +125,7 @@ absolute(distance_1-distance_3)/min_finder(distance_1, distance_3) <= X ||
 absolute(distance_2-distance_3)/min_finder(distance_2, distance_3) <= X  )
         
 {
-         printf("Point x_coordinate, y_coordinate was discarded.");
+         printf("\nPoint x_coordinate, y_coordinate was discarded.");
 }
 
           /*changing center of clusters*/
@@ -149,9 +149,9 @@ absolute(distance_2-distance_3)/min_finder(distance_2, distance_3) <= X  )
       number_of_points_of_cluster_3++;
       
    }
-      printf("Coorinates of cluster 1 (%f, %f)", x_of_cluster_1, y_of_cluster_1);
-      printf("Coorinates of cluster 2 (%f, %f)", x_of_cluster_2, y_of_cluster_2);
-      printf("Coorinates of cluster 3 (%f, %f)", x_of_cluster_3, y_of_cluster_3);
+      printf("\nCoorinates of cluster 1 (%f, %f)", x_of_cluster_1, y_of_cluster_1);
+      printf("\nCoorinates of cluster 2 (%f, %f)", x_of_cluster_2, y_of_cluster_2);
+      printf("\nCoorinates of cluster 3 (%f, %f)", x_of_cluster_3, y_of_cluster_3);
 
 
 
