@@ -7,6 +7,22 @@
 one.*/
 #define EPSILON 0.001 /* to avoid them by perturbing the 0 results*/
 
+
+double calculator (double input_x, double input_y, double ours_x, double ours_y){
+
+ 
+   double operation = (input_x - ours_x )*(input_x - ours_x ) + (input_y-ours_y)*(input_y-ours_y);
+
+return sqrt(operation);
+
+
+
+
+}
+
+
+
+
 int 
     main(void){
 
