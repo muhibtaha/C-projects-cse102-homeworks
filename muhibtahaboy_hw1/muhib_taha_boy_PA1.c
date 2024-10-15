@@ -58,33 +58,31 @@ int  number_of_points_of_cluster_1, /*number of points*/
 
 
 /* for cluster 1*/
- printf("Give x of new point: ");
  scanf("%lf", &input_x);
  x_of_cluster_1= input_x;
 
- printf("Give y of new point: ");
  scanf("%lf", &input_y);
  y_of_cluster_1=input_y;
+  printf("Point included cluster 1\n");
 
 
 /*for cluster 2*/
-printf("Give x of new point: ");
  scanf("%lf", &input_x);
  x_of_cluster_2= input_x;
 
- printf("Give y of new point: ");
  scanf("%lf", &input_y);
  y_of_cluster_2=input_y;
+   printf("Point included cluster 2\n");
 
 
 /*for cluster 3*/
- printf("Give x of new point: ");
  scanf("%lf", &input_x);
  x_of_cluster_3= input_x;
 
- printf("Give y of new point: ");
  scanf("%lf", &input_y);
  y_of_cluster_3=input_y;
+   printf("Point included cluster 3\n");
+
 
 
  
@@ -102,9 +100,8 @@ int i;
 for(i=0;i<N-3; i++) { /*N-3 because first 3 numbers are not included*/
 
 
- printf("\nGive x of new point: "); scanf("%lf", &input_x);
-
- printf("\nGive y of new point: "); scanf("%lf", &input_y);
+ scanf("%lf", &input_x); /*to get coordinates */
+ scanf("%lf", &input_y);
 
  distance_1 = calculate(input_x, input_y, x_of_cluster_1, y_of_cluster_1 );
  distance_2 = calculate(input_x, input_y, x_of_cluster_2, y_of_cluster_2 );
@@ -124,7 +121,7 @@ absolute(distance_2-distance_3)/((distance_2+distance_3)/2) <= X  )
    else if (distance_1<distance_2 && distance_1<distance_3){
       x_of_cluster_1= (x_of_cluster_1*number_of_points_of_cluster_1+ input_x)/(number_of_points_of_cluster_1 + 1);
       y_of_cluster_1= (y_of_cluster_1*number_of_points_of_cluster_1+ input_y)/(number_of_points_of_cluster_1 + 1);
-      printf("\nPoint (%f, %f included in cluster 1 ", input_x, input_y);
+      printf("Point (%f, %f) included in cluster 1\n ", input_x, input_y);
       number_of_points_of_cluster_1++;
       
    }
@@ -132,7 +129,7 @@ absolute(distance_2-distance_3)/((distance_2+distance_3)/2) <= X  )
    else if (distance_2<distance_1 && distance_2<distance_3){
       x_of_cluster_2= (x_of_cluster_2*number_of_points_of_cluster_2+ input_x)/(number_of_points_of_cluster_2 + 1);
       y_of_cluster_2= (y_of_cluster_2*number_of_points_of_cluster_2+ input_y)/(number_of_points_of_cluster_2 + 1);
-      printf("\nPoint (%f, %f included in cluster 2 ", input_x, input_y);
+      printf("Point (%f, %f) included in cluster 2\n ", input_x, input_y);
       
       number_of_points_of_cluster_2++;
       
@@ -141,16 +138,17 @@ absolute(distance_2-distance_3)/((distance_2+distance_3)/2) <= X  )
    else if (distance_3<distance_2 && distance_3<distance_2){
       x_of_cluster_3= (x_of_cluster_3*number_of_points_of_cluster_3+ input_x)/(number_of_points_of_cluster_3 + 1);
       y_of_cluster_3= (y_of_cluster_3*number_of_points_of_cluster_3+ input_y)/(number_of_points_of_cluster_3 + 1);
-      printf("\nPoint (%f, %f included in cluster 3 ", input_x, input_y);
+      printf("Point (%f, %f) included in cluster 3\n ", input_x, input_y);
 
       number_of_points_of_cluster_3++;
       
    }
+
+
+
+}
       printf("\nCoorinates of cluster 1 (%f, %f), and %d points", x_of_cluster_1, y_of_cluster_1, number_of_points_of_cluster_1);
       printf("\nCoorinates of cluster 2 (%f, %f), and %d points", x_of_cluster_2, y_of_cluster_2, number_of_points_of_cluster_2);
       printf("\nCoorinates of cluster 3 (%f, %f), and %d points", x_of_cluster_3, y_of_cluster_3, number_of_points_of_cluster_3);
       printf("\n- - - - - - -\n");
-
-
-}
     }
