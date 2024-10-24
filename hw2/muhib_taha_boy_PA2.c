@@ -1,11 +1,9 @@
 #include <stdio.h>
-#define X 2 /*size of segments*/
-#define Y 3 /*number of recent segments*/
+#define X 5 /*size of segments*/
+#define Y 5 /*number of recent segments*/
 #define c 1 /*small constant integer*/
 #define MAX_SIZE c*X*Y /*max size of our array*/
-
-
-
+#define control 230104004 /*control number which is not in input.txt*/
 
 
 
@@ -32,7 +30,7 @@ int i,p;
 for(i=0; i<X; i++){
     for ( p = 0; p < Y; p++)
     {
-permanent_array[p][i]=230104004;}; };  /*to sure that all arrays do not have random numbers
+permanent_array[p][i]= control ;}; };  /*to sure that all arrays do not have random numbers
                                                                           we will use it later for possibilty of the fact that
                                                                                         all given number may be remembered for all input
                                                                                                                        so out arrays may not be full  */
@@ -87,14 +85,14 @@ while (fscanf(inputFile, "%d", &nextNumber) != EOF){
  int q,w;
  for ( q = 0; q < Y; q++)
  {
-    if (permanent_array[q][0]!=230104004){
+    if (permanent_array[q][0]!= control){
 
         for (w = 0; w < X; w++)
         {
             fprintf (outputFile, "%d ", permanent_array[q][w]);
         };
         
-        fprintf(outputFile, "%d\n",segment_count_array[q]);
+        fprintf(outputFile, ": %d\n",segment_count_array[q]);
 
     };
 
