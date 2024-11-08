@@ -90,21 +90,21 @@ double evaluate_term(char *term, double x, double y) {
 
 
 /*divides polynoms to terms*/
-void process_polynomial(char *polynomial, double x, double y) {
-    double total_result = 0.0;
-    int sign = 1;  // İşaret (pozitif veya negatif)
-    char term[100];  // Her terim için geçici bir buffer
-    int index = 0;   // `term` buffer’ı için index
+void process_polynomial(char *polynomial, double *total_result, double x, double y) {
+    int sign = 1;  
+    char term[100];  /*her terimi ayrı ayrı tutan dizi*/
+    int index = 0;   /* term için index */
 
-    for (int i = 0; i <= strlen(polynomial); i++) {
+    int i;
+    for (i = 0; i <= strlen(polynomial); i++) {
         if (polynomial[i] == '+' || polynomial[i] == '-' || polynomial[i] == '\0') {
-            if (index > 0) { // Geçerli bir terim varsa işleyin
-                term[index] = '\0';  // Term'i sonlandır
+            if (index > 0) {
+                term[index] = '\0';  /* finish term*/
 
-                // İşarete göre terimi değerlendirin
-                total_result += evaluate_term(term, x, y) * sign;
+               /* calculate total term*/
+                *total_result += evaluate_term(term, x, y) * sign;
 
-                index = 0; // Term buffer’ı sıfırlayın
+                index = 0; /* make term index 0*/
             }
 
             // Yeni işareti ayarla
@@ -114,35 +114,68 @@ void process_polynomial(char *polynomial, double x, double y) {
         }
     }
 
-    printf("Polinomun toplam sonucu: %lf\n", total_result);
+    printf("Polinomun toplam sonucu: %lf\n", *total_result);
 }
 
 
 int main() {
-    FILE *file = fopen("polinom.txt", "r");
-    if (!file) {
-        perror("Dosya açılamadı");
+    FILE *polinom = fopen("polinom.txt", "r");
+    if (!polinom) {
+        perror("File can not open polinom\n");
         return 1;
     }
+
+        FILE *values = fopen("values.txt", "r");
+    if (!values) {
+        perror("File can not open  values\n");
+        return 1;
+    }
+
+        FILE *evaluations = fopen("evaluations.txt", "r");
+    if (!values) {
+        perror("File can not open  evaluations\n");
+        return 1;
+    }    
+    
     
     char line[MAX_LINE_LENGTH];
     
+    /*
     double x, y;
     printf("x değeri: ");
     scanf("%lf", &x);
     printf("y değeri: ");
-    scanf("%lf", &y);
+    scanf("%lf", &y);  */
 
-    // Dosyadaki her satırı oku
-    while (fgets(line, sizeof(line), file)) {
-        // Satır sonundaki '\n' karakterini temizlemiyoruz
-        // Artık satırdaki '\n' karakteri dikkate alınacak
-        
-        // Polinomu işle ve toplam sonucu hesapla
-        process_polynomial(line, x, y);
+        double *total_result;
+
+
+
+    double x, y;
+    while (fscanf(polinom, "%lf %lf", &x, &y) == 2) { // İki değeri de başarıyla okuduğunda döner
+ 
+    
+
+                /*we will read each line*/ 
+            while (fgets(line, sizeof(line), polinom)) {
+
+                       /* line = polynomial*/
+                 process_polynomial(line, total_result, x, y);
+                
+                       fprintf(evaluations, "%lf ", *total_result); /*prtint to eevulations calculatet polinoms*/
+                         /**/
+                       total_result=0;
+                            }
+
+                                                   fprintf(evaluations, "\n ");
+ 
+
     }
     
-    fclose(file);
+    fclose(polinom);
+    fclose(values);
+    fclose(evaluations);
+
     
     return 0;
 }
