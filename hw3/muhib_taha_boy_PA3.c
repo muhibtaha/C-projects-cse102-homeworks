@@ -3,7 +3,7 @@
 #include <math.h>
 
 #define MAX_LINE_LENGTH 1024  
-#define MAX_TERMS 100  /*max size of polyomal*/
+#define MAX_TERMS 1024  /*max size of polyomal*/
 
 /* exponent calculator */
 double power(double base, int exp) {
