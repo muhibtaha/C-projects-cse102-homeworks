@@ -1,163 +1,89 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
-/*a function which make calculati
- call another function and*/
- 
- typedef struct {   char main_module_name[31];
- 		    int coef_submodules[100]; //we have to change char to int
-  		    char temp_string_array[1000];		   	 
- 		    char sub_module_names[100][31];//+1 for null
- 		    int integers[100]; //we have to change char to int 
- 		    } built;		    
- 		    
- 
- 
- 
- 
- /*burası yanlış integeri toplaması lazım*/
- int calculate(built module1, int submodule_count){
- 			int result = 0;
-   			for (int i = 0; i < submodule_count; i++) {
-        			printf("Calculating: %d * %s\n", module1.coef_submodules[i], module1.sub_module_names[i]);
-       				 result = module1.coef_submodules[i] * result + module1.integers[i];
-    				}
-    		return result;
-}
- 
- 
- 
- 
-int digitCount(int number) {
-    int count = 0;
+#define MAX_MODULES 100
+#define MAX_IDENTIFIER_LEN 30
+#define MAX_DESC_LEN 256
 
+typedef struct {
+    char identifier[MAX_IDENTIFIER_LEN + 1];
+    char description[MAX_DESC_LEN + 1];
+    int value;
+    int defined; // To check if the module's value is already calculated
+} Module;
 
+Module modules[MAX_MODULES];
+int module_count = 0;
 
-    // 0 özel bir durumdur, tek basamaklıdır
-    if (number == 0) {
-        return 1;
-    }
-
-    // Sayıyı 10'a böle böle basamakları say
-    while (number != 0) {
-        number /= 10;
-        count++;
-    }
-
-    return count;
-}
- 
- 
- 
- 
- int isDigit(char blabla){ /*controls chars is it integer*/
- 
- return ('0' <= blabla <='9');
- 		
- };
- 
- 
- 
- 
- 
- built my_function(built module1) {  /*it ask models then asko submodels then ask submodels submodels until all submodel become integer. then it ask last menu other submodels.. it going like that while using recoursive function,  make calculations*/
- 
-
- 			char *ptr = module1.temp_string_array;
- 			char part[100]; 
- 
-
-			int submodule_count=0;
- 			printf("Define %s\n", module1.main_module_name);
-     			getchar(); //to delete \n that comes from scanf 
- 			scanf("%[^\n]", module1.temp_string_array);
-
-
- 			int i=0;
-     
-     				while (*ptr != '\0') {
-        				if (sscanf(ptr, "%[^+]", module1.sub_module_names[submodule_count]) == 1) {
-
-   					 
-   				submodule_count++;
-   				char *ptr_part=  module1.sub_module_names[submodule_count-1]; /*not next, current*/
-   					while(*ptr_part != '\0'){ 
-   								while (isDigit(*ptr_part)){	
-   											        module1.coef_submodules[0]= 10*module1.coef_submodules[0]+ (*ptr_part-'0');
-   												*ptr_part++;}
-   												 
-   					
-   					}	 
-   					 
-
-
-    						ptr += strlen(part) + digitCount(module1.coef_submodules[0]) + 1; /* +1 for '*' sign */			
-        			// Eğer + varsa, bir sonraki kısma geç
-        			if (*ptr == '+') {
-            			i++;
-            			ptr++;  // + karakterini atla
-        			}
-    			}
-    			
-    			/*buradan sonrasında baya yanlış olabilir*/
-    					     // Eğer sadece integer değer girilmişse
-      					  else if (sscanf(ptr, "%d", &module1.integers[submodule_count]) == 1) {
-            					printf("Final value for %s: %d\n", module1.main_module_name, module1.integers[submodule_count]);
-           			 		return module1;  // Geri dönüş
+int find_module_index(char *id) {
+    for (int i = 0; i < module_count; i++) {
+        if (strcmp(modules[i].identifier, id) == 0) {
+            return i;
         }
- 
- 
- /* bunu yapıyor gibi gözükmedi*/
-         // Eğer submodül varsa, recursive çağrı yap
-        built submodule;
-        strcpy(submodule.main_module_name, module1.sub_module_names[submodule_count]);
-        submodule = my_function(submodule);  // Submodül işleme
-        module1.integers[submodule_count] = calculate(submodule, submodule_count);  // Hesaplama yap
-        
-        submodule_count++;
+    }
+    return -1;
+}
 
-        // Eğer + varsa, bir sonraki kısma geç
-        if (*ptr == '+') {
-            ptr++;
-        }
+int get_module_value(char *id);
+
+int calculate_module_value(char *description) {
+    int result = 0;
+    char temp_desc[MAX_DESC_LEN + 1];
+    strcpy(temp_desc, description);
     
+    char *token = strtok(temp_desc, "+");
+    
+    while (token != NULL) {
+        // Trim leading spaces
+        while (isspace(*token)) token++;
+        
+        int scalar = 1;
+        char module_id[MAX_IDENTIFIER_LEN + 1];
+        
+        if (sscanf(token, "%d*%s", &scalar, module_id) == 2 || sscanf(token, "%*c%s", module_id) == 1) {
+            result += scalar * get_module_value(module_id);
+        } else if (sscanf(token, "%d", &scalar) == 1) {
+            result += scalar;
+        }
+        
+        token = strtok(NULL, "+");
+    }
+    
+    return result;
 }
- 
- return module1;
- }
- 
- 
- 
- 
- 
- 
- int main
- 	(void) {
 
- 		built module1;
- 		printf("Module name?");
- 		scanf("%s", module1.main_module_name);
- 		module1 =my_function(module1);
- 		    int result = calculate(module1, 100);  // Tüm modüllerin sonucunu hesapla
-    printf("Final result for %s: %d\n", module1.main_module_name, result);
- 	
+int get_module_value(char *id) {
+    int index = find_module_index(id);
+    if (index == -1) {
+        // Ask user to define the module if not found
+        printf("Define %s: ", id);
+        char description[MAX_DESC_LEN + 1];
+        scanf(" %[^\n]", description);
+        
+        // Add the module
+        strcpy(modules[module_count].identifier, id);
+        strcpy(modules[module_count].description, description);
+        modules[module_count].defined = 0;
+        index = module_count++;
+    }
+    
+    if (!modules[index].defined) {
+        // Calculate the module value only if it is not already calculated
+        modules[index].value = calculate_module_value(modules[index].description);
+        modules[index].defined = 1;
+    }
+    
+    return modules[index].value;
+}
 
- 	
- 	return(0);
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	
- 	} 
+int main() {
+    char initial_module[MAX_IDENTIFIER_LEN + 1];
+    printf("Module name?: ");
+    scanf("%s", initial_module);
+    
+    int final_result = get_module_value(initial_module);
+    printf("%d\n", final_result);
+
+    return 0;
+}
