@@ -102,7 +102,6 @@ int
             else printf("NO, array B cannot be made equal to array A\n");
 
 
-
     return (0);
 
 
