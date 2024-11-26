@@ -1,89 +1,99 @@
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-
-#define MAX_MODULES 100
-#define MAX_IDENTIFIER_LEN 30
-#define MAX_DESC_LEN 256
 
 typedef struct {
-    char identifier[MAX_IDENTIFIER_LEN + 1];
-    char description[MAX_DESC_LEN + 1];
-    int value;
-    int defined; // To check if the module's value is already calculated
-} Module;
+    char main_module_name[31];       
+    char sub_module_names[100][31]; 
+    char temp_string_array[1000];    // input mathematical expression
+} built;
 
-Module modules[MAX_MODULES];
-int module_count = 0;
-
-int find_module_index(char *id) {
-    for (int i = 0; i < module_count; i++) {
-        if (strcmp(modules[i].identifier, id) == 0) {
-            return i;
-        }
-    }
-    return -1;
+// to check if a character is a digit
+int isDigit(char ch) {
+    return (ch >= '0' && ch <= '9');
 }
 
-int get_module_value(char *id);
 
-int calculate_module_value(char *description) {
+int stringToInt(char *str) {
     int result = 0;
-    char temp_desc[MAX_DESC_LEN + 1];
-    strcpy(temp_desc, description);
-    
-    char *token = strtok(temp_desc, "+");
-    
-    while (token != NULL) {
-        // Trim leading spaces
-        while (isspace(*token)) token++;
-        
-        int scalar = 1;
-        char module_id[MAX_IDENTIFIER_LEN + 1];
-        
-        if (sscanf(token, "%d*%s", &scalar, module_id) == 2 || sscanf(token, "%*c%s", module_id) == 1) {
-            result += scalar * get_module_value(module_id);
-        } else if (sscanf(token, "%d", &scalar) == 1) {
-            result += scalar;
+    while (*str) {
+        if (isDigit(*str)) {
+            result = result * 10 + (*str - '0');
+        } else {
+            return -1; // if not a valid integer, return -1
         }
-        
-        token = strtok(NULL, "+");
+        str++;
     }
-    
-    return result;
+    return result; 
 }
 
-int get_module_value(char *id) {
-    int index = find_module_index(id);
-    if (index == -1) {
-        // Ask user to define the module if not found
-        printf("Define %s: ", id);
-        char description[MAX_DESC_LEN + 1];
-        scanf(" %[^\n]", description);
-        
-        // Add the module
-        strcpy(modules[module_count].identifier, id);
-        strcpy(modules[module_count].description, description);
-        modules[module_count].defined = 0;
-        index = module_count++;
+
+
+int my_function(built *module1) {
+    char *ptr = module1->temp_string_array; 
+    int result = 0; // result for the current module
+
+    printf("Define %s: ", module1->main_module_name);
+    getchar(); // clear newline character
+    scanf("%[^\n]", module1->temp_string_array); // read full line
+
+
+    while (*ptr != '\0') {
+        while (*ptr == ' ') ptr++; // skip spaces
+
+        int coef = 1; // Default coefficient : 1
+        char submodule_name[31] = {0}; // temp. buffer for submodule name
+
+        // parse coefficient if it not non
+        if (isDigit(*ptr)) {
+            coef = 0;
+            while (isDigit(*ptr)) {
+                coef = coef * 10 + (*ptr - '0');
+                ptr++;
+            }
+        }
+        if (*ptr == '*') ptr++; // skip '*'
+
+        while (*ptr == ' ') ptr++; // skip space before submodule name
+
+        // parse submodule name
+        int len = 0;
+        while (*ptr != '+' && *ptr != '\0' && *ptr != ' ') {
+            if (len < 30) {
+                submodule_name[len++] = *ptr; //we know that max len is 30
+            }
+            ptr++;
+        }
+        submodule_name[len] = '\0'; //add null
+
+        while (*ptr == ' ') ptr++; // skip spaces
+        if (*ptr == '+') ptr++; // skip '+'
+
+        // if no submodule name, treat coefficient as a direct integer result
+        // if user enter just integer, integers become ceoefficient and moddule name become ' '
+        if (strlen(submodule_name) == 0) {
+            result += coef;
+            continue;
+        }
+
+        // check if submodule name is a direct integer
+        int potentialInt = stringToInt(submodule_name);
+        if (potentialInt == -1) {
+            // if not an integer, recursively process the submodule
+            built submodule = {0};
+            strcpy(submodule.main_module_name, submodule_name);
+            int submodule_result = my_function(&submodule); // recursive call
+            result += coef * submodule_result; // rdd submodule result to the total
+        } 
     }
-    
-    if (!modules[index].defined) {
-        // Calculate the module value only if it is not already calculated
-        modules[index].value = calculate_module_value(modules[index].description);
-        modules[index].defined = 1;
-    }
-    
-    return modules[index].value;
+
+    return result; // return the calculated result for the module
 }
 
-int main() {
-    char initial_module[MAX_IDENTIFIER_LEN + 1];
-    printf("Module name?: ");
-    scanf("%s", initial_module);
-    
-    int final_result = get_module_value(initial_module);
-    printf("%d\n", final_result);
-
+int main(void) {
+    built module1 = {0}; 
+    printf("Module name? ");
+    scanf("%s", module1.main_module_name); 
+    int final_result = my_function(&module1); // calculate
+    printf("Final result for %s: %d\n", module1.main_module_name, final_result); // the final result
     return 0;
 }
