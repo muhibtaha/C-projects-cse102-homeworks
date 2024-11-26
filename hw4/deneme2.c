@@ -41,7 +41,7 @@ int my_function(built *module1) {
         while (*ptr == ' ') ptr++; // skip spaces
 
         int coef = 1; // Default coefficient : 1
-        char submodule_name[31] = {0}; // Temporary buffer for submodule name
+        char submodule_name[31] = {0}; // temp. buffer for submodule name
 
         // parse coefficient if it not non
         if (isDigit(*ptr)) {
@@ -81,8 +81,8 @@ int my_function(built *module1) {
             // if not an integer, recursively process the submodule
             built submodule = {0};
             strcpy(submodule.main_module_name, submodule_name);
-            int submodule_result = my_function(&submodule); // Recursive call
-            result += coef * submodule_result; // Add submodule result to the total
+            int submodule_result = my_function(&submodule); // recursive call
+            result += coef * submodule_result; // rdd submodule result to the total
         } 
     }
 
