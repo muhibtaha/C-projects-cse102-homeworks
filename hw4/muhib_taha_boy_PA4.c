@@ -51,6 +51,9 @@ int my_function(built *module1) {
                 ptr++;
             }
         }
+        
+                while (*ptr == ' ') ptr++; // skip space before submodule name
+        
         if (*ptr == '*') ptr++; // skip '*'
 
         while (*ptr == ' ') ptr++; // skip space before submodule name

@@ -47,9 +47,6 @@ void parse_term(char *term, int *coef, int *exp_x, int *exp_y) {
     }
 
     int num = 0;
-
-
-
     while (digit_control(*ptr)) { /*control*/
         num = num * 10 + (*ptr - '0');  /* change char numbers to integer by using ASCII values */
         ptr++;
@@ -132,9 +129,9 @@ int split_polynomial(char *polynomial, char terms[MAX_TERMS][100]) {
 
 
 int main() {
-    FILE *polinom = fopen("polinom.txt", "r");
+    FILE *polinom = fopen("polynomials.txt", "r");
     if (!polinom) {
-        perror("File cannot be opened: polinom.txt\n");
+        perror("File cannot be opened: polynomials.txt\n");
         return 1;
     }
 
