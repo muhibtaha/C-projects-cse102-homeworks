@@ -2,226 +2,172 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Define constants
 #define MAX_INPUTS 10
 #define MAX_NAME_LEN 20
 
-// Enum for gate types
-typedef enum {
-    INPUT, OUTPUT, AND, OR, NOT, FLIPFLOP
-} GateType;
-
-// Struct for a gate
+// Gate structure
 typedef struct Gate {
-    GateType type;
+    char type[MAX_NAME_LEN];
     char name[MAX_NAME_LEN];
-    struct Gate *input_gates[MAX_INPUTS]; // Array of pointers to input gates
-    int number_of_inputs;
-    int output; // Current output
-    int former_out; // For FLIPFLOP
-    short evaluated; // Flag to prevent re-evaluation in a simulation
-    int (*characteristic_function)(int *, int); // Logic function pointer
+    struct Gate* input_gates[MAX_INPUTS];
+    int num_inputs;
+    int output;
+    int former_out; // Used for FLIPFLOP gates
+    int evaluated; // 0 for false, 1 for true
+    int (*logic_function)(int*, int, int*);
 } Gate;
 
-// Function prototypes
-Gate *create_gate(GateType type, const char *name);
-void create_connection(Gate *from_gate, Gate *to_gate);
-int evaluate_gate(Gate *gate);
-int and_function(int *inputs, int n);
-int or_function(int *inputs, int n);
-int not_function(int *inputs, int n);
-int flipflop_function(int *inputs, int n, int *former_out);
-void reset_gates(Gate **gates, int count);
-Gate *find_gate(Gate **gates, int count, const char *name);
-
-// Gate characteristic functions
-int and_function(int *inputs, int n) {
-    printf("AND function called with %d inputs\n", n);
+// Logic functions
+int and_function(int* inputs, int n, int* former_out) {
     for (int i = 0; i < n; i++) {
         if (!inputs[i]) return 0;
     }
     return 1;
 }
 
-int or_function(int *inputs, int n) {
-    printf("OR function called with %d inputs\n", n);
+int or_function(int* inputs, int n, int* former_out) {
     for (int i = 0; i < n; i++) {
         if (inputs[i]) return 1;
     }
     return 0;
 }
 
-int not_function(int *inputs, int n) {
-    printf("NOT function called\n");
+int not_function(int* inputs, int n, int* former_out) {
     return !inputs[0];
 }
 
-int flipflop_function(int *inputs, int n, int *former_out) {
-    printf("FLIPFLOP function called with input: %d and former_out: %d\n", inputs[0], *former_out);
-    int result = inputs[0] ^ *former_out; // Exclusive OR for FLIPFLOP
+int flipflop_function(int* inputs, int n, int* former_out) {
+    int result = (inputs[0] == *former_out) ? 0 : 1;
+    printf("[DEBUG] FLIPFLOP Gate: Former Out: %d, Input: %d, Result: %d\n", *former_out, inputs[0], result);
     *former_out = inputs[0];
     return result;
 }
 
-// Create a gate
-Gate *create_gate(GateType type, const char *name) {
-    printf("Creating gate: %s of type %d\n", name, type);
-    Gate *gate = (Gate *)malloc(sizeof(Gate));
-    if (!gate) {
-        fprintf(stderr, "Memory allocation failed\n");
-        exit(EXIT_FAILURE);
-    }
-    gate->type = type;
+// Functions to create and evaluate gates
+Gate* create_gate(const char* type, const char* name) {
+    Gate* gate = (Gate*)malloc(sizeof(Gate));
+    strncpy(gate->type, type, MAX_NAME_LEN);
     strncpy(gate->name, name, MAX_NAME_LEN);
-    gate->name[MAX_NAME_LEN - 1] = '\0';
-    gate->number_of_inputs = 0;
-    gate->evaluated = 0;
-    gate->former_out = 0;
+    gate->num_inputs = 0;
     gate->output = 0;
+    gate->former_out = 0;
+    gate->evaluated = 0;
 
-    // Assign the characteristic function based on gate type
-    switch (type) {
-        case AND:
-            gate->characteristic_function = and_function;
-            break;
-        case OR:
-            gate->characteristic_function = or_function;
-            break;
-        case NOT:
-            gate->characteristic_function = not_function;
-            break;
-        case FLIPFLOP:
-            gate->characteristic_function = NULL; // Custom handling for FLIPFLOP
-            break;
-        default:
-            gate->characteristic_function = NULL;
-    }
+    if (strcmp(type, "AND") == 0) gate->logic_function = and_function;
+    else if (strcmp(type, "OR") == 0) gate->logic_function = or_function;
+    else if (strcmp(type, "NOT") == 0) gate->logic_function = not_function;
+    else if (strcmp(type, "FLIPFLOP") == 0) gate->logic_function = flipflop_function;
+    else gate->logic_function = NULL;
 
+    printf("[DEBUG] Created Gate: %s, Type: %s\n", gate->name, gate->type);
     return gate;
 }
 
-// Create a connection between two gates
-void create_connection(Gate *from_gate, Gate *to_gate) {
-    printf("Creating connection from gate %s to gate %s\n", from_gate->name, to_gate->name);
-    if (to_gate->number_of_inputs >= MAX_INPUTS) {
-        fprintf(stderr, "Maximum number of inputs exceeded for gate %s\n", to_gate->name);
-        exit(EXIT_FAILURE);
-    }
-    to_gate->input_gates[to_gate->number_of_inputs++] = from_gate;
-}
+int evaluate_gate(Gate* gate) {
+    if (gate->evaluated) return gate->output;
 
-// Evaluate a gate
-int evaluate_gate(Gate *gate) {
-    printf("Evaluating gate: %s\n", gate->name);
-    if (gate->evaluated) {
-        printf("Gate %s already evaluated with output: %d\n", gate->name, gate->output);
-        return gate->output;
-    }
+    printf("[DEBUG] Evaluating Gate: %s, Type: %s\n", gate->name, gate->type);
 
-    int input_values[MAX_INPUTS];
-    for (int i = 0; i < gate->number_of_inputs; i++) {
-        input_values[i] = evaluate_gate(gate->input_gates[i]);
-    }
+    if (strcmp(gate->type, "OUTPUT") == 0) {
+        if (gate->num_inputs == 1) {
+            gate->output = evaluate_gate(gate->input_gates[0]);
+        } else {
+            printf("[ERROR] OUTPUT gate %s has incorrect connections\n", gate->name);
+        }
+    } else {
+        int inputs[MAX_INPUTS];
+        for (int i = 0; i < gate->num_inputs; i++) {
+            inputs[i] = evaluate_gate(gate->input_gates[i]);
+        }
 
-    if (gate->type == FLIPFLOP) {
-        gate->output = flipflop_function(input_values, gate->number_of_inputs, &gate->former_out);
-    } else if (gate->characteristic_function) {
-        gate->output = gate->characteristic_function(input_values, gate->number_of_inputs);
+        if (gate->logic_function) {
+            gate->output = gate->logic_function(inputs, gate->num_inputs, &gate->former_out);
+        }
     }
 
+    printf("[DEBUG] Gate %s Output: %d\n", gate->name, gate->output);
     gate->evaluated = 1;
-    printf("Gate %s evaluated with output: %d\n", gate->name, gate->output);
     return gate->output;
 }
 
-// Reset gates before a new simulation
-void reset_gates(Gate **gates, int count) {
-    printf("Resetting gates\n");
-    for (int i = 0; i < count; i++) {
-        printf("Resetting gate: %s\n", gates[i]->name);
+void reset_gates(Gate** gates, int num_gates) {
+    for (int i = 0; i < num_gates; i++) {
+        printf("[DEBUG] Resetting Gate: %s, Former Out: %d\n", gates[i]->name, gates[i]->former_out);
         gates[i]->evaluated = 0;
     }
 }
 
-// Find a gate by name
-Gate *find_gate(Gate **gates, int count, const char *name) {
-    for (int i = 0; i < count; i++) {
-        if (strcmp(gates[i]->name, name) == 0) {
-            return gates[i];
-        }
-    }
-    return NULL;
-}
-
 int main() {
-    printf("Starting simulation\n");
+    FILE* circuit_file = fopen("circuit.txt", "r");
+    FILE* input_file = fopen("input.txt", "r");
 
-    Gate *gates[100];
-    int gate_count = 0;
-
-    FILE *circuit_file = fopen("circuit.txt", "r");
-    if (!circuit_file) {
-        fprintf(stderr, "Failed to open circuit.txt\n");
+    if (!circuit_file || !input_file) {
+        printf("Unable to open files.\n");
         return 1;
     }
+
+    Gate** gates = (Gate**)malloc(10 * sizeof(Gate*));
+    int gate_count = 0;
+    int gate_capacity = 10;
 
     char line[256];
     while (fgets(line, sizeof(line), circuit_file)) {
-        char command[20], type_or_from[20], name_or_to[20];
-        sscanf(line, "%s %s %s", command, type_or_from, name_or_to);
+        char keyword[16], gate_type[16], gate_name[16];
+        if (sscanf(line, "%s %s %s", keyword, gate_type, gate_name) == 3 && strcmp(keyword, "GATE") == 0) {
+            if (gate_count >= gate_capacity) {
+                gate_capacity *= 2;
+                gates = (Gate**)realloc(gates, gate_capacity * sizeof(Gate*));
+            }
+            gates[gate_count++] = create_gate(gate_type, gate_name);
+        } else if (sscanf(line, "%s %s %s", keyword, gate_name, gate_type) == 3 && strcmp(keyword, "CONNECTION") == 0) {
+            Gate* from_gate = NULL;
+            Gate* to_gate = NULL;
 
-        if (strcmp(command, "GATE") == 0) {
-            GateType type;
-            if (strcmp(type_or_from, "INPUT") == 0) type = INPUT;
-            else if (strcmp(type_or_from, "OUTPUT") == 0) type = OUTPUT;
-            else if (strcmp(type_or_from, "AND") == 0) type = AND;
-            else if (strcmp(type_or_from, "OR") == 0) type = OR;
-            else if (strcmp(type_or_from, "NOT") == 0) type = NOT;
-            else if (strcmp(type_or_from, "FLIPFLOP") == 0) type = FLIPFLOP;
-            else continue;
+            for (int i = 0; i < gate_count; i++) {
+                if (strcmp(gates[i]->name, gate_name) == 0) from_gate = gates[i];
+                if (strcmp(gates[i]->name, gate_type) == 0) to_gate = gates[i];
+            }
 
-            gates[gate_count++] = create_gate(type, name_or_to);
-        } else if (strcmp(command, "CONNECTION") == 0) {
-            Gate *from_gate = find_gate(gates, gate_count, type_or_from);
-            Gate *to_gate = find_gate(gates, gate_count, name_or_to);
             if (from_gate && to_gate) {
-                create_connection(from_gate, to_gate);
+                if (to_gate->num_inputs >= MAX_INPUTS) {
+                    printf("[ERROR] Maximum inputs exceeded for gate %s.\n", to_gate->name);
+                    exit(1);
+                }
+                to_gate->input_gates[to_gate->num_inputs++] = from_gate;
+                printf("[DEBUG] Connected %s -> %s\n", from_gate->name, to_gate->name);
+            } else {
+                printf("[ERROR] Invalid connection from %s to %s\n", gate_name, gate_type);
             }
         }
     }
-    fclose(circuit_file);
 
-    FILE *input_file = fopen("input.txt", "r");
-    if (!input_file) {
-        fprintf(stderr, "Failed to open input.txt\n");
-        return 1;
-    }
+    fclose(circuit_file);
 
     while (fgets(line, sizeof(line), input_file)) {
         reset_gates(gates, gate_count);
 
-        // Assign inputs
-        int input_index = 0;
-        for (int i = 0; i < gate_count; i++) {
-            if (gates[i]->type == INPUT) {
-                gates[i]->output = line[input_index++] - '0';
+        for (int i = 0, input_index = 0; line[i] != '\n' && line[i] != '\0'; i++) {
+            if (strcmp(gates[input_index]->type, "INPUT") == 0) {
+                gates[input_index]->output = line[i] - '0';
+                gates[input_index]->evaluated = 1;
+                printf("[DEBUG] Assigned Input %d to Gate %s\n", gates[input_index]->output, gates[input_index]->name);
+                input_index++;
             }
         }
 
-        // Evaluate outputs
         for (int i = 0; i < gate_count; i++) {
-            if (gates[i]->type == OUTPUT) {
-                printf("%d", evaluate_gate(gates[i]));
+            if (strcmp(gates[i]->type, "OUTPUT") == 0) {
+                printf("%d\n", evaluate_gate(gates[i]));
             }
         }
-        printf("\n");
     }
+
     fclose(input_file);
 
-    // Free memory
     for (int i = 0; i < gate_count; i++) {
         free(gates[i]);
     }
+    free(gates);
 
     return 0;
 }

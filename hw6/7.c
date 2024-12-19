@@ -44,9 +44,10 @@ int flipflop_function(int* inputs, int n, int* former_out) {
     int result;
     if (inputs[0] == *former_out) {
         result = 0; // XOR işlemi: aynıysa sonuç 0
-    } else {
+    } else if (inputs[0] != *former_out){
         result = 1; // XOR işlemi: farklıysa sonuç 1
     }
+       // printf("[DEBUG]: FLIPFLOP input: %d, former_out: %d, result: %d\n", inputs[0], *former_out, result);
     *former_out = inputs[0]; // Önceki durumu güncelle.
     return result;
 }
@@ -105,20 +106,26 @@ int main() {
     FILE* input_file = fopen("input.txt", "r");
 
     if (!circuit_file || !input_file) {
-        fprintf(stderr, "Error: Unable to open files.\n");
+        printf("Unable to open files.\n");
         return 1;
     }
 
-    Gate* gates[100];
-    int gate_count = 0;
+    // Dynamic memory allocation for gates
+    Gate** gates = (Gate**)malloc(10 * sizeof(Gate*)); // Array of gate pointers
+    int gate_count = 0;     // Number of gates created
+    int gate_capacity = 10; // Current capacity of the gates array
 
     char line[256];
     while (fgets(line, sizeof(line), circuit_file)) {
         char keyword[16], gate_type[16], gate_name[16];
         if (sscanf(line, "%s %s %s", keyword, gate_type, gate_name) == 3 && strcmp(keyword, "GATE") == 0) {
-            
-            
+            // Check if we need to expand the gates array
+            if (gate_count >= gate_capacity) {
+                gate_capacity *= 2; // Double the capacity
+                gates = (Gate**)realloc(gates, gate_capacity * sizeof(Gate*)); // Resize the array
+            }
 
+            // Create a new gate and add it to the array
             gates[gate_count++] = create_gate(gate_type, gate_name);
         } else if (sscanf(line, "%s %s %s", keyword, gate_name, gate_type) == 3 && strcmp(keyword, "CONNECTION") == 0) {
             Gate* from_gate = NULL;
@@ -130,6 +137,10 @@ int main() {
             }
 
             if (from_gate && to_gate) {
+                if (to_gate->num_inputs >= MAX_INPUTS) {
+                    printf("Maximum inputs exceeded for gate %s.\n", to_gate->name);
+                    exit(1);
+                }
                 to_gate->input_gates[to_gate->num_inputs++] = from_gate;
             }
         }
@@ -137,29 +148,40 @@ int main() {
 
     fclose(circuit_file);
 
-    while (fgets(line, sizeof(line), input_file)) {
-        reset_gates(gates, gate_count);
+while (fgets(line, sizeof(line), input_file)) {
+    reset_gates(gates, gate_count);
 
-        for (int i = 0, input_index = 0; line[i] != '\n' && line[i] != '\0'; i++) {
-            if (strcmp(gates[input_index]->type, "INPUT") == 0) {
-                gates[input_index]->output = line[i] - '0';
-                gates[input_index]->evaluated = 1;
-                input_index++;
-            }
-        }
-
-        for (int i = 0; i < gate_count; i++) {
-            if (strcmp(gates[i]->type, "OUTPUT") == 0) {
-                printf("%d\n", evaluate_gate(gates[i]));
-            }
+    // Assign inputs
+    for (int i = 0, input_index = 0; line[i] != '\n' && line[i] != '\0'; i++) {
+        if (strcmp(gates[input_index]->type, "INPUT") == 0) {
+            gates[input_index]->output = line[i] - '0';
+            gates[input_index]->evaluated = 1;
+            input_index++;
         }
     }
+
+    // Evaluate OUTPUT gates and print results
+    int output_count = 0; // Track number of OUTPUT gates
+    for (int i = 0; i < gate_count; i++) {
+        if (strcmp(gates[i]->type, "OUTPUT") == 0) {
+            if (output_count > 0) {
+                printf(" "); // Separate multiple outputs with space
+            }
+            printf("%d", evaluate_gate(gates[i]));
+            output_count++;
+        }
+    }
+    printf("\n"); // Newline after printing all OUTPUT gates for the current input
+}
+
 
     fclose(input_file);
 
+    // Free all dynamically allocated gates
     for (int i = 0; i < gate_count; i++) {
         free(gates[i]);
     }
+    free(gates); // Free the gates array itself
 
     return 0;
 }
