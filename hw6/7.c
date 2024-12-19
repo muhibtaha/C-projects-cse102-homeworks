@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+//max input 10 bir tek or ve and için olacak
+//açıklamalar yaptırılacak
+//
 #define MAX_INPUTS 10
 #define MAX_NAME_LEN 20
-
-// Gate types enumeration
 
 
 // Gate structure
@@ -73,12 +73,19 @@ Gate* create_gate(const char* type, const char* name) {
 int evaluate_gate(Gate* gate) {
     if (gate->evaluated) return gate->output;
 
+    if (strcmp(gate->type, "AND")|| strcmp(gate->type, "OR")){
+        if (gate->num_inputs < 2) {printf("AND and OR have to have at least 2 input\n");
+        exit(1);
+        }
+
+    }
+
     if (strcmp(gate->type, "OUTPUT") == 0) {
         // Directly evaluate the single input gate connected to this OUTPUT
         if (gate->num_inputs == 1) {
             gate->output = evaluate_gate(gate->input_gates[0]);
         } else {
-            printf ("[ERROR]:  OUTPUT gate %s has incorrect connections\n", gate->name);
+            printf ("OUTPUT gate %s has incorrect connections\n", gate->name);
         }
     } else {
         int inputs[MAX_INPUTS];
@@ -141,7 +148,8 @@ int main() {
                     printf("Maximum inputs exceeded for gate %s.\n", to_gate->name);
                     exit(1);
                 }
-                to_gate->input_gates[to_gate->num_inputs++] = from_gate;
+                to_gate->input_gates[to_gate->num_inputs] = from_gate;
+                to_gate->num_inputs++;
             }
         }
     }
