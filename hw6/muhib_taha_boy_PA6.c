@@ -1,23 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> 
 
-#define MAX_INPUTS 10
+#define MAX_INPUTS 10 //macros
 #define MAX_NAME_LEN 20
 
-// Gate structure
+// node structure input gates
+typedef struct Node {
+    struct Gate* gate; // to the connected gate
+    struct Node* next; // to the next node
+} Node;
+
+// gate structure
 typedef struct Gate {
     char type[MAX_NAME_LEN];
     char name[MAX_NAME_LEN];
-    struct Gate* input_gates[MAX_INPUTS];
+    Node* input_gates; // linked list of input gates
     int num_inputs;
     int output;
-    int former_out; // Used for FLIPFLOP gates
+    int former_out; // used for FLIPFLOP gates
     int evaluated; // 0 for false, 1 for true
     int (*logic_function)(int*, int, int*);
 } Gate;
 
-// Logic functions
+// logic functions
 int and_function(int* inputs, int n, int* former_out) {
     for (int i = 0; i < n; i++) {
         if (!inputs[i]) return 0;
@@ -37,47 +43,69 @@ int not_function(int* inputs, int n, int* former_out) {
 }
 
 int flipflop_function(int* inputs, int n, int* former_out) {
-    int result = (inputs[0] == *former_out) ? 0 : 1;
-    printf("[DEBUG] FLIPFLOP Gate: Former Out: %d, Input: %d, Result: %d\n", *former_out, inputs[0], result);
-    *former_out = inputs[0];
+    int result;
+    if (inputs[0] == *former_out) {
+        result = 0; // XOR , if they are same result 0
+    } else if (inputs[0] != *former_out){
+        result = 1; 
+    }
+    *former_out = inputs[0]; //update last one
     return result;
 }
 
-// Functions to create and evaluate gates
+// add a connection from input to funcyion
+void add_input_gate(Gate* gate, Gate* input_gate) {
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->gate = input_gate;
+    new_node->next = gate->input_gates;
+    gate->input_gates = new_node;
+    gate->num_inputs++;
+}
+
+// functions to create and evaluate gates
 Gate* create_gate(const char* type, const char* name) {
     Gate* gate = (Gate*)malloc(sizeof(Gate));
     strncpy(gate->type, type, MAX_NAME_LEN);
     strncpy(gate->name, name, MAX_NAME_LEN);
+    gate->input_gates = NULL; // initialize linklist 
     gate->num_inputs = 0;
     gate->output = 0;
     gate->former_out = 0;
     gate->evaluated = 0;
-
-    if (strcmp(type, "AND") == 0) gate->logic_function = and_function;
+    
+    //add logical function if ther are funciton gate
+    if (strcmp(type, "AND") == 0) gate->logic_function = and_function; 
     else if (strcmp(type, "OR") == 0) gate->logic_function = or_function;
     else if (strcmp(type, "NOT") == 0) gate->logic_function = not_function;
     else if (strcmp(type, "FLIPFLOP") == 0) gate->logic_function = flipflop_function;
-    else gate->logic_function = NULL;
-
-    printf("[DEBUG] Created Gate: %s, Type: %s\n", gate->name, gate->type);
+    else gate->logic_function = NULL; //what if it is not function gate
     return gate;
 }
 
 int evaluate_gate(Gate* gate) {
+
+    //if a gate is input gate, cause of it is evaluated (1) it return output
     if (gate->evaluated) return gate->output;
 
-    printf("[DEBUG] Evaluating Gate: %s, Type: %s\n", gate->name, gate->type);
+    if ((strcmp(gate->type, "AND") == 0 || strcmp(gate->type, "OR") == 0) && gate->num_inputs < 2) {
+        printf("AND and OR have to have at least 2 input\n");
+        exit(1);
+    }
 
     if (strcmp(gate->type, "OUTPUT") == 0) {
+        // directly evaluate the single input gate connected to this out
         if (gate->num_inputs == 1) {
-            gate->output = evaluate_gate(gate->input_gates[0]);
+            gate->output = evaluate_gate(gate->input_gates->gate);
         } else {
-            printf("[ERROR] OUTPUT gate %s has incorrect connections\n", gate->name);
+            printf ("OUTPUT gate %s has incorrect connections\n", gate->name);
         }
     } else {
         int inputs[MAX_INPUTS];
-        for (int i = 0; i < gate->num_inputs; i++) {
-            inputs[i] = evaluate_gate(gate->input_gates[i]);
+        int i = 0;
+        Node* current = gate->input_gates;
+        while (current != NULL) {
+            inputs[i++] = evaluate_gate(current->gate);
+            current = current->next;
         }
 
         if (gate->logic_function) {
@@ -85,14 +113,12 @@ int evaluate_gate(Gate* gate) {
         }
     }
 
-    printf("[DEBUG] Gate %s Output: %d\n", gate->name, gate->output);
     gate->evaluated = 1;
     return gate->output;
 }
 
 void reset_gates(Gate** gates, int num_gates) {
     for (int i = 0; i < num_gates; i++) {
-        printf("[DEBUG] Resetting Gate: %s, Former Out: %d\n", gates[i]->name, gates[i]->former_out);
         gates[i]->evaluated = 0;
     }
 }
@@ -106,18 +132,22 @@ int main() {
         return 1;
     }
 
-    Gate** gates = (Gate**)malloc(10 * sizeof(Gate*));
-    int gate_count = 0;
-    int gate_capacity = 10;
+    
+    Gate** gates = (Gate**)malloc(10 * sizeof(Gate*)); // array of gate pointers
+    int gate_count = 0;     // number of gates created
+    int gate_capacity = 10; // current capacity
 
     char line[256];
     while (fgets(line, sizeof(line), circuit_file)) {
         char keyword[16], gate_type[16], gate_name[16];
         if (sscanf(line, "%s %s %s", keyword, gate_type, gate_name) == 3 && strcmp(keyword, "GATE") == 0) {
+            // check if we need to expand the gates array
             if (gate_count >= gate_capacity) {
-                gate_capacity *= 2;
-                gates = (Gate**)realloc(gates, gate_capacity * sizeof(Gate*));
+                gate_capacity *= 2; // double the capacity
+                gates = (Gate**)realloc(gates, gate_capacity * sizeof(Gate*)); // resize the array
             }
+
+            // create a new gate and addto the array
             gates[gate_count++] = create_gate(gate_type, gate_name);
         } else if (sscanf(line, "%s %s %s", keyword, gate_name, gate_type) == 3 && strcmp(keyword, "CONNECTION") == 0) {
             Gate* from_gate = NULL;
@@ -129,45 +159,52 @@ int main() {
             }
 
             if (from_gate && to_gate) {
-                if (to_gate->num_inputs >= MAX_INPUTS) {
-                    printf("[ERROR] Maximum inputs exceeded for gate %s.\n", to_gate->name);
-                    exit(1);
-                }
-                to_gate->input_gates[to_gate->num_inputs++] = from_gate;
-                printf("[DEBUG] Connected %s -> %s\n", from_gate->name, to_gate->name);
-            } else {
-                printf("[ERROR] Invalid connection from %s to %s\n", gate_name, gate_type);
+                add_input_gate(to_gate, from_gate);
             }
         }
     }
 
     fclose(circuit_file);
 
-    while (fgets(line, sizeof(line), input_file)) {
-        reset_gates(gates, gate_count);
+while (fgets(line, sizeof(line), input_file)) {
+    reset_gates(gates, gate_count);
 
-        for (int i = 0, input_index = 0; line[i] != '\n' && line[i] != '\0'; i++) {
-            if (strcmp(gates[input_index]->type, "INPUT") == 0) {
-                gates[input_index]->output = line[i] - '0';
-                gates[input_index]->evaluated = 1;
-                printf("[DEBUG] Assigned Input %d to Gate %s\n", gates[input_index]->output, gates[input_index]->name);
-                input_index++;
-            }
-        }
-
-        for (int i = 0; i < gate_count; i++) {
-            if (strcmp(gates[i]->type, "OUTPUT") == 0) {
-                printf("%d\n", evaluate_gate(gates[i]));
-            }
+    // assign inputs
+    for (int i = 0, input_index = 0; line[i] != '\n' && line[i] != '\0'; i++) {
+        if (strcmp(gates[input_index]->type, "INPUT") == 0) {
+            gates[input_index]->output = line[i] - '0';
+            gates[input_index]->evaluated = 1;
+            input_index++;
         }
     }
+
+    // evaluate OUTPUT
+    int output_count = 0; // count number outpust gates
+    for (int i = 0; i < gate_count; i++) {
+        if (strcmp(gates[i]->type, "OUTPUT") == 0) {
+  
+            printf("%d", evaluate_gate(gates[i]));
+            output_count++;
+        }
+    }
+    printf("\n"); 
+}
+
 
     fclose(input_file);
 
+    // free gates
     for (int i = 0; i < gate_count; i++) {
+        // free linked list nodes for input gates
+        Node* current = gates[i]->input_gates;
+        while (current != NULL) {
+            Node* next = current->next;
+            free(current);
+            current = next;
+        }
         free(gates[i]);
     }
-    free(gates);
+    free(gates); //gates array itself
 
     return 0;
 }

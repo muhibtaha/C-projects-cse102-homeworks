@@ -94,14 +94,14 @@ void vanillia(piece **grid, int width, int height){
 
 
 
-//bonus part functions
-void get_group_color(int group, int *r, int *g, int *b, int color_palette[127][3], int *overgroup) {
+//bonus parts
+void get_group_color(int group, int *r, int *g, int *b, int color_palette[127][3]) {
     if (group > 0 && group <= 127) {
         *r = color_palette[group - 1][0];
         *g = color_palette[group - 1][1];
         *b = color_palette[group - 1][2];
     } else if (group >127) {
-        *overgroup=1;
+        printf("Warning! There are more than 127 groups. More groups were made black.\n");
     } else {
                 *r = *g = *b = 0; //default black thats have no grups, they was black pixel before
 
@@ -117,18 +117,19 @@ void process_image(FILE *input, FILE *output, int width, int height, int color_p
     // read the input image and assign each pixel a group
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            int r;
-            if (fscanf(input, "%d", &r) != 1) {
+            int r, g, b;
+            if (fscanf(input, "%d %d %d", &r, &g, &b) != 3) {
                 printf("Error reading pixel values at %d, %d\n", i, j);
-                r  = 0;  // Default to black if read fails
+                r = g = b = 0;  // Default to black if read fails
 
             }
 
             
+
             // assign values based on RGB
-            if (r == 0) {
+            if (r == 0 && g == 0 && b == 0) {
                 pixels[i][j].value = 0;  // Black
-            } else if (r == 1) {
+            } else if (r == 255 && g == 255 && b == 255) {
                 pixels[i][j].value = 1;  // white
             } else {
                 pixels[i][j].value = 0;  // default to black if not pure black or white
@@ -145,19 +146,18 @@ void process_image(FILE *input, FILE *output, int width, int height, int color_p
     vanillia(pixels, width, height);
 
 
-    int over_group=0;
+
     // write pixel colors to output
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             int r, g, b;
-            get_group_color(pixels[i][j].label, &r, &g, &b, color_palette, &over_group);
+            get_group_color(pixels[i][j].label, &r, &g, &b, color_palette);
             fprintf(output, "%d %d %d ", r, g, b);
         }
         fprintf(output, "\n");
     }
 
-    if(over_group==1) printf("Warning, there are more than 127 groups. Groups that stayed longer were painted black\n");
-    // free allocated memory
+    // Free allocated memory
     for (int i = 0; i < height; i++) {
         free(pixels[i]);
     }
@@ -257,6 +257,11 @@ int color_palette[127][3] = {
     char bonus_header[3];
     fscanf(bonus_input, "%s", bonus_header);
     fscanf(bonus_input, "%d %d", &bonus_x_value, &bonus_y_value);
+    int bonus_max_value;
+    fscanf(bonus_input, "%d", &bonus_max_value);
+ 
+
+    
 
     // Process the image
     process_image(bonus_input, bonus_output, bonus_x_value, bonus_y_value, color_palette);

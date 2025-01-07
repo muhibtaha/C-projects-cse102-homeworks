@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string.h> 
 
-//max input 10 bir tek or ve and için olacak
-//açıklamalar yaptırılacak
-//
-#define MAX_INPUTS 10
+
+#define MAX_INPUTS 10 //macros
 #define MAX_NAME_LEN 20
 
 
@@ -16,7 +14,7 @@ typedef struct Gate {
     struct Gate* input_gates[MAX_INPUTS];
     int num_inputs;
     int output;
-    int former_out; // Used for FLIPFLOP gates
+    int former_out; // used for FLIPFLOP gates
     int evaluated; // 0 for false, 1 for true
     int (*logic_function)(int*, int, int*);
 } Gate;
@@ -43,12 +41,11 @@ int not_function(int* inputs, int n, int* former_out) {
 int flipflop_function(int* inputs, int n, int* former_out) {
     int result;
     if (inputs[0] == *former_out) {
-        result = 0; // XOR işlemi: aynıysa sonuç 0
+        result = 0; // XOR , if they are same result 0
     } else if (inputs[0] != *former_out){
-        result = 1; // XOR işlemi: farklıysa sonuç 1
+        result = 1; 
     }
-       // printf("[DEBUG]: FLIPFLOP input: %d, former_out: %d, result: %d\n", inputs[0], *former_out, result);
-    *former_out = inputs[0]; // Önceki durumu güncelle.
+    *former_out = inputs[0]; //update last one
     return result;
 }
 
@@ -62,15 +59,18 @@ Gate* create_gate(const char* type, const char* name) {
     gate->former_out = 0;
     gate->evaluated = 0;
     
-    if (strcmp(type, "AND") == 0) gate->logic_function = and_function;
+    //add logical function if ther are funciton gate
+    if (strcmp(type, "AND") == 0) gate->logic_function = and_function; 
     else if (strcmp(type, "OR") == 0) gate->logic_function = or_function;
     else if (strcmp(type, "NOT") == 0) gate->logic_function = not_function;
     else if (strcmp(type, "FLIPFLOP") == 0) gate->logic_function = flipflop_function;
-    else gate->logic_function = NULL;
+    else gate->logic_function = NULL; //what if it is not function gate
     return gate;
 }
 
 int evaluate_gate(Gate* gate) {
+
+    //if a gate is input gate, cause of it is evaluated (1) it return output
     if (gate->evaluated) return gate->output;
 
     if (strcmp(gate->type, "AND")|| strcmp(gate->type, "OR")){
@@ -81,7 +81,7 @@ int evaluate_gate(Gate* gate) {
     }
 
     if (strcmp(gate->type, "OUTPUT") == 0) {
-        // Directly evaluate the single input gate connected to this OUTPUT
+        // directly evaluate the single input gate connected to this out
         if (gate->num_inputs == 1) {
             gate->output = evaluate_gate(gate->input_gates[0]);
         } else {
